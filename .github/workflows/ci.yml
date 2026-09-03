@@ -1,0 +1,67 @@
+name: CyberSentinel CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [phishing-detect, network-ids, auth-anomaly, prompt-guard]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        working-directory: services/${{ matrix.service }}
+        run: pip install -r requirements.txt
+
+      - name: Smoke-test the service imports and starts
+        working-directory: services/${{ matrix.service }}
+        run: |
+          python -c "
+          import sys, os
+          sys.path.append(os.path.join('..', '..', 'event-bus'))
+          from main import app
+          from fastapi.testclient import TestClient
+          client = TestClient(app)
+          r = client.get('/health')
+          assert r.status_code == 200, f'Health check failed: {r.status_code}'
+          print(f'{r.json()} — OK')
+          "
+
+  build-images:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build phishing-detect image
+        run: docker build -f services/phishing-detect/Dockerfile -t cybersentinel/phishing-detect:${{ github.sha }} .
+
+      - name: Build network-ids image
+        run: docker build -f services/network-ids/Dockerfile -t cybersentinel/network-ids:${{ github.sha }} .
+
+      - name: Build auth-anomaly image
+        run: docker build -f services/auth-anomaly/Dockerfile -t cybersentinel/auth-anomaly:${{ github.sha }} .
+
+      - name: Build prompt-guard image
+        run: docker build -f services/prompt-guard/Dockerfile -t cybersentinel/prompt-guard:${{ github.sha }} .
+
+      - name: Build event-bus image
+        run: docker build -f event-bus/Dockerfile -t cybersentinel/event-bus:${{ github.sha }} .
+
+      # Pushing to a real registry (ECR/Docker Hub) needs registry credentials
+      # as GitHub Secrets — intentionally left out here since that's specific
+      # to your AWS account. See infra/DEPLOY.md for the exact steps once
+      # you're ready to push real credentials into GitHub Secrets.

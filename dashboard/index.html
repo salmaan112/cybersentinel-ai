@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sentinel — CyberSentinel AI Ops Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0B1220;
+    --panel: #121A2C;
+    --panel-border: #223050;
+    --text: #E6E9F0;
+    --muted: #7C89A6;
+    --accent: #2DD4BF;
+    --accent-dim: #1B4A45;
+    --critical: #FF5470;
+    --high: #FFA53C;
+    --medium: #4FC3F7;
+    --low: #34D399;
+    --offline: #4A5568;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    min-height: 100vh;
+  }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 32px;
+    border-bottom: 1px solid var(--panel-border);
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .brand-mark {
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), #0E8074);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; color: #05201C; font-size: 16px;
+  }
+  .brand h1 { font-size: 19px; margin: 0; font-weight: 600; letter-spacing: 0.2px; }
+  .brand p { margin: 0; font-size: 12.5px; color: var(--muted); }
+
+  .modules {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+  .module-pill {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 12.5px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--offline);
+    transition: background 0.3s;
+  }
+  .dot.online { background: var(--low); box-shadow: 0 0 8px var(--low); }
+  .dot.offline { background: var(--offline); }
+
+  .simulate-btn {
+    background: var(--accent);
+    color: #05201C;
+    border: none;
+    padding: 11px 20px;
+    border-radius: 6px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: transform 0.12s, box-shadow 0.2s;
+  }
+  .simulate-btn:hover { box-shadow: 0 0 0 3px var(--accent-dim); }
+  .simulate-btn:active { transform: scale(0.97); }
+  .simulate-btn:disabled { opacity: 0.5; cursor: wait; }
+
+  main {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 1px;
+    background: var(--panel-border);
+    min-height: calc(100vh - 82px);
+  }
+  @media (max-width: 860px) {
+    main { grid-template-columns: 1fr; }
+  }
+
+  .panel { background: var(--bg); padding: 24px 28px; }
+  .panel h2 {
+    font-size: 13px;
+    text-transform: none;
+    color: var(--muted);
+    font-weight: 600;
+    margin: 0 0 18px 0;
+    letter-spacing: 0.3px;
+  }
+
+  .feed-empty {
+    color: var(--muted);
+    font-size: 13.5px;
+    padding: 40px 0;
+    text-align: center;
+    border: 1px dashed var(--panel-border);
+    border-radius: 8px;
+  }
+
+  .alert-row {
+    display: grid;
+    grid-template-columns: 4px 90px 1fr 70px 90px;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 4px;
+    border-bottom: 1px solid var(--panel-border);
+    font-size: 13px;
+    animation: slidein 0.35s ease;
+  }
+  @keyframes slidein {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .sev-bar { height: 28px; border-radius: 2px; }
+  .sev-bar.critical { background: var(--critical); }
+  .sev-bar.high { background: var(--high); }
+  .sev-bar.medium { background: var(--medium); }
+  .sev-bar.low { background: var(--low); }
+
+  .alert-module {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    color: var(--muted);
+  }
+  .alert-source {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .alert-score { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; text-align: right; }
+  .alert-time { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--muted); text-align: right; }
+
+  .stat-block { margin-bottom: 26px; }
+  .stat-total {
+    font-size: 40px;
+    font-weight: 700;
+    line-height: 1;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .stat-label { color: var(--muted); font-size: 12.5px; margin-top: 4px; }
+
+  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .bar-label { width: 110px; font-size: 12px; color: var(--muted); font-family: 'JetBrains Mono', monospace; flex-shrink: 0; }
+  .bar-track { flex: 1; height: 8px; background: var(--panel); border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+  .bar-count { width: 26px; text-align: right; font-size: 12px; font-family: 'JetBrains Mono', monospace; color: var(--muted); }
+
+  .empty-state-icon { font-size: 22px; margin-bottom: 6px; opacity: 0.6; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-mark">S</div>
+    <div>
+      <h1>Sentinel</h1>
+      <p>CyberSentinel AI — unified threat detection console</p>
+    </div>
+  </div>
+
+  <div class="modules" id="module-status">
+    <div class="module-pill"><span class="dot" id="dot-phishing-detect"></span>phishing-detect</div>
+    <div class="module-pill"><span class="dot" id="dot-network-ids"></span>network-ids</div>
+    <div class="module-pill"><span class="dot" id="dot-auth-anomaly"></span>auth-anomaly</div>
+    <div class="module-pill"><span class="dot" id="dot-prompt-guard"></span>prompt-guard</div>
+  </div>
+
+  <button class="simulate-btn" id="simulate-btn" onclick="simulateAttack()">Simulate attack</button>
+</header>
+
+<main>
+  <div class="panel">
+    <h2>Live alert feed</h2>
+    <div id="feed"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Overview</h2>
+    <div class="stat-block">
+      <div class="stat-total" id="total-count">0</div>
+      <div class="stat-label">alerts recorded this session</div>
+    </div>
+
+    <div class="stat-block">
+      <div class="stat-label" style="margin-bottom: 12px;">by module</div>
+      <div id="module-bars"></div>
+    </div>
+
+    <div class="stat-block">
+      <div class="stat-label" style="margin-bottom: 12px;">by severity</div>
+      <div id="severity-bars"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+const AGGREGATOR = "http://localhost:8000";
+const SEV_COLORS = { critical: "#FF5470", high: "#FFA53C", medium: "#4FC3F7", low: "#34D399" };
+const MODULE_LABELS = {
+  "phishing-detect": "phishing", "network-ids": "network",
+  "auth-anomaly": "auth", "prompt-guard": "prompt",
+};
+
+let knownAlertKeys = new Set();
+
+function fmtTime(ts) {
+  try {
+    return new Date(ts).toLocaleTimeString([], { hour12: false });
+  } catch (e) { return ts; }
+}
+
+function renderFeed(alerts) {
+  const feed = document.getElementById("feed");
+  if (!alerts.length) {
+    feed.innerHTML = `<div class="feed-empty"><div class="empty-state-icon">◈</div>No alerts yet — click "Simulate attack" to see the detectors in action.</div>`;
+    return;
+  }
+  feed.innerHTML = alerts.slice(0, 60).map(a => `
+    <div class="alert-row">
+      <div class="sev-bar ${a.severity}"></div>
+      <div class="alert-module">${MODULE_LABELS[a.module] || a.module}</div>
+      <div class="alert-source" title="${(a.source || '').replace(/"/g,'&quot;')}">${a.source || '—'}</div>
+      <div class="alert-score">${(a.score * 100).toFixed(1)}%</div>
+      <div class="alert-time">${fmtTime(a.timestamp)}</div>
+    </div>
+  `).join("");
+}
+
+function renderStats(alerts) {
+  document.getElementById("total-count").textContent = alerts.length;
+
+  const byModule = {};
+  const bySeverity = { critical: 0, high: 0, medium: 0, low: 0 };
+  alerts.forEach(a => {
+    byModule[a.module] = (byModule[a.module] || 0) + 1;
+    if (bySeverity[a.severity] !== undefined) bySeverity[a.severity]++;
+  });
+
+  const maxModule = Math.max(1, ...Object.values(byModule));
+  document.getElementById("module-bars").innerHTML = Object.keys(MODULE_LABELS).map(m => {
+    const count = byModule[m] || 0;
+    return `<div class="bar-row">
+      <div class="bar-label">${MODULE_LABELS[m]}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(count/maxModule*100)}%; background: var(--accent);"></div></div>
+      <div class="bar-count">${count}</div>
+    </div>`;
+  }).join("");
+
+  const maxSev = Math.max(1, ...Object.values(bySeverity));
+  document.getElementById("severity-bars").innerHTML = Object.keys(bySeverity).map(s => `
+    <div class="bar-row">
+      <div class="bar-label">${s}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(bySeverity[s]/maxSev*100)}%; background:${SEV_COLORS[s]};"></div></div>
+      <div class="bar-count">${bySeverity[s]}</div>
+    </div>
+  `).join("");
+}
+
+async function pollAlerts() {
+  try {
+    const res = await fetch(`${AGGREGATOR}/alerts`);
+    const alerts = await res.json();
+    renderFeed(alerts);
+    renderStats(alerts);
+  } catch (e) {
+    document.getElementById("feed").innerHTML =
+      `<div class="feed-empty">Can't reach the event-bus aggregator at ${AGGREGATOR}.<br>Make sure aggregator.py is running (uvicorn aggregator:app --port 8000).</div>`;
+  }
+}
+
+async function pollStatus() {
+  try {
+    const res = await fetch(`${AGGREGATOR}/module-status`);
+    const status = await res.json();
+    Object.keys(status).forEach(mod => {
+      const dot = document.getElementById(`dot-${mod}`);
+      if (dot) dot.className = `dot ${status[mod] === "online" ? "online" : "offline"}`;
+    });
+  } catch (e) { /* aggregator itself offline — dots just stay grey */ }
+}
+
+async function simulateAttack() {
+  const btn = document.getElementById("simulate-btn");
+  btn.disabled = true;
+  btn.textContent = "Simulating…";
+  try {
+    await fetch(`${AGGREGATOR}/simulate-attack`, { method: "POST" });
+    await pollAlerts();
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Simulate attack";
+  }
+}
+
+pollAlerts();
+pollStatus();
+setInterval(pollAlerts, 3000);
+setInterval(pollStatus, 5000);
+</script>
+
+</body>
+</html>

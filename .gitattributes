@@ -1,0 +1,7 @@
+# Without this, Git on Windows can silently corrupt binary files (like the
+# .joblib model files) by converting line endings — this caused a real
+# "input stream corrupted" XGBoost error earlier in this project. Marking
+# these explicitly as binary tells Git to never touch their bytes.
+*.joblib binary
+*.csv text eol=lf
+*.pyc binary

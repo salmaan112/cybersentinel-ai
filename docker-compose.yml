@@ -1,0 +1,58 @@
+# Run the whole platform with one command: docker compose up --build
+# Run this from the repo root (where this file lives).
+version: "3.9"
+
+services:
+  phishing-detect:
+    build:
+      context: .
+      dockerfile: services/phishing-detect/Dockerfile
+    ports:
+      - "8001:8001"
+    restart: unless-stopped
+
+  network-ids:
+    build:
+      context: .
+      dockerfile: services/network-ids/Dockerfile
+    ports:
+      - "8002:8002"
+    restart: unless-stopped
+
+  auth-anomaly:
+    build:
+      context: .
+      dockerfile: services/auth-anomaly/Dockerfile
+    ports:
+      - "8003:8003"
+    restart: unless-stopped
+
+  prompt-guard:
+    build:
+      context: .
+      dockerfile: services/prompt-guard/Dockerfile
+    ports:
+      - "8004:8004"
+    restart: unless-stopped
+
+  event-bus:
+    build:
+      context: .
+      dockerfile: event-bus/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      # Inside Docker's network, containers reach each other by service name,
+      # not localhost — this is the actual, real difference between running
+      # locally and running in Docker, and it's why aggregator.py reads these
+      # from the environment instead of hardcoding "localhost".
+      - PHISHING_DETECT_URL=http://phishing-detect:8001
+      - NETWORK_IDS_URL=http://network-ids:8002
+      - AUTH_ANOMALY_URL=http://auth-anomaly:8003
+      - PROMPT_GUARD_URL=http://prompt-guard:8004
+    depends_on:
+      - phishing-detect
+      - network-ids
+      - auth-anomaly
+      - prompt-guard
+    restart: unless-stopped
