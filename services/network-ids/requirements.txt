@@ -6,3 +6,4 @@ mlflow
 pandas
 joblib
 pydantic
+httpx2
