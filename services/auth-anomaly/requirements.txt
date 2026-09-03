@@ -7,3 +7,4 @@ pandas
 joblib
 pydantic
 faker
+httpx2
